@@ -1,27 +1,28 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
 output: 
-html_document:
-keep_md: true
+  html_document: 
+    keep_md: yes
 ---
 
 
+
 ## Loading and preprocessing the data
+Set working directory and read the data into R.
 ```{r LoadData}
+rm(list=ls())
 setwd("/Users/Andy/DataSciCoursera/ReproducibleResearch/CourseProject1/")
 dat <- read.csv("activity.csv")
 ```
 
 Take a look at the data
 ```{r QuickLook}
-class(dat)
-names(dat)
+str(dat)
 head(dat)
 tail(dat)
-str(dat)
+
 ```
 
-Convert date from factor to datetime
+Convert date from factor to date class.
 ```{r convertDate}
 class(dat$date)
 dat$date <- as.Date(dat$date)
@@ -53,14 +54,15 @@ Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and 
 
 ```{r PlotPerInterval}
 mean_steps_interval <- as.numeric(tapply(dat$steps, dat$interval, mean,na.rm=TRUE))
-plot(as.numeric(unique(dat$interval)),mean_steps_interval,type="l",ylab="Avg # steps taken",xlab="Interval")
+plot(as.numeric(unique(dat$interval)),mean_steps_interval,type="l",ylab="Avg # steps taken",xlab="Interval",main="Mean # Steps per Interval")
 ```
 
 Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
 ```{r FindMaxInt}
-unique(dat$interval)[which.max(mean_steps_interval)]
+maxint<-unique(dat$interval)[which.max(mean_steps_interval)]
 ```
+The interval `r maxint` contains the maximum number of steps.
 
 ## Imputing missing values
 
@@ -77,32 +79,36 @@ Devise a strategy for filling in all of the missing values in the dataset. The s
 I will fill in NAs with the mean for each interval.
 ```{r FillNas}
 idna <-which(is.na(dat$steps))
-dat$steps_fill<-dat$steps
-#lapply( dat$steps[which(is.na(dat$steps))],mean())
+steps_fill<-dat$steps
 for (i in seq_along(idna)){
-        dat$steps_fill[idna[i]] <- mean_steps_interval[which(dat$interval[idna[i]]==unique(dat$interval))]
+        steps_fill[idna[i]] <- mean_steps_interval[which(dat$interval[idna[i]]==unique(dat$interval))]
 }
-head(dat)
 ```
 
 
 Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
+```{r CreateFilledData}
+dat_filled <- data.frame(steps=steps_fill,date=dat$date,interval=dat$interval)
+head(dat_filled)
+```
+
 Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
 ```{r}
-steps_per_day_fill <- tapply(dat$steps_fill,dat$date,sum)
+steps_per_day_fill <- tapply(dat_filled$steps,dat_filled$date,sum)
 hist(steps_per_day_fill)
+```  
 
-```
 Recompute the mean and median steps per day.  
 
 ```{r MeanMedfill}
 mean_steps_day_fill <- mean(steps_per_day_fill)
 med_steps_day_fill <- median(steps_per_day_fill)
 ```
-The mean number of steps per day with NAs filled is `r mean_steps_day_fill`, compared to `r mean_steps_day` with NAs, a ratio of `r mean_steps_day_fill/mean_steps_day`  
-The median number of steps per day with NAs filled is `r med_steps_day_fill`, compared to `r med_steps_day` with NAs, a ratio of `r med_steps_day_fill/med_steps_day`    
+The mean number of steps per day with NAs filled is `r mean_steps_day_fill`, compared to `r mean_steps_day` with NAs, a ratio of `r mean_steps_day_fill/mean_steps_day`.  
+The median number of steps per day with NAs filled is `r med_steps_day_fill`, compared to `r med_steps_day` with NAs, a ratio of `r med_steps_day_fill/med_steps_day`.  
+So imputing missing data has little or no effect on the estimates of the total daily number of steps.  
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
@@ -134,9 +140,8 @@ dat2=rbind(dat2a,dat2b)
 
 Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
 
-```{r,echo=FALSE}
+```{r,echo=TRUE}
 library(lattice)
-
 xyplot(steps~interval | Group,data=dat2,layout=c(1,2),type="l")
 ```  
 
